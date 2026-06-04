@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spring AI Chat - Vue.js</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    /* 样式同上，保持不变 */
+    /* ... 复制上面的样式 ... */
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="container">
+    <div class="header">
+      <h1><i class="fas fa-robot"></i> Spring AI 智能助手</h1>
+      <div class="subtitle">基于 Spring Boot + Spring AI 构建的专业AI对话系统</div>
+    </div>
+
+    <div class="model-selector" style="padding: 15px 20px 0;">
+      <label for="model-select">选择AI模型：</label>
+      <select id="model-select" v-model="selectedModel">
+        <option value="deepseek-chat">DeepSeek Chat (通用)</option>
+        <option value="deepseek-reasoner">DeepSeek Reasoner (推理)</option>
+      </select>
+    </div>
+
+    <div class="chat-container" ref="chatContainer">
+      <div v-for="(message, index) in messages" :key="index"
+           :class="['message', message.sender === 'user' ? 'user-message' : 'ai-message']">
+        <div class="message-bubble" v-html="formatMessage(message.content)"></div>
+        <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+      </div>
+
+      <div class="typing-indicator" v-if="isTyping">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <div class="input-container">
+      <div class="input-wrapper">
+                    <textarea
+                            v-model="inputMessage"
+                            @keydown.enter.prevent="handleEnter"
+                            placeholder="请输入您的问题（支持多行输入，Shift+Enter换行）..."
+                            rows="2"
+                            :disabled="isLoading"
+                    ></textarea>
+        <button
+                class="send-btn"
+                @click="sendMessage"
+                :disabled="isLoading || !inputMessage.trim()"
+        >
+          <span v-if="isLoading"><i class="fas fa-spinner fa-spin"></i> 思考中</span>
+          <span v-else>发送</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+  createApp({
+      setup() {
+          // 状态
+          const messages = ref([
+              {
+                  sender: 'ai',
+                  content: '您好！我是基于Spring AI构建的智能助手。我可以帮助您解答各种问题，提供编程建议，分析问题等。请问有什么可以帮助您的吗？',
+                  timestamp: new Date()
+              }
+          ]);
+
+          const inputMessage = ref('');
+          const isLoading = ref(false);
+          const isTyping = ref(false);
+          const selectedModel = ref('deepseek-chat');
+          const chatContainer = ref(null);
+
+          // 配置
+          const API_BASE = window.location.origin;
+
+          // 方法
+          const sendMessage = async () => {
+              const message = inputMessage.value.trim();
+              if (!message || isLoading.value) return;
+
+              // 添加用户消息
+              messages.value.push({
+                  sender: 'user',
+                  content: message,
+                  timestamp: new Date()
+              });
+
+              // 清空输入
+              inputMessage.value = '';
+
+              // 显示正在输入
+              isTyping.value = true;
+              isLoading.value = true;
+
+              // 滚动到底部
+              scrollToBottom();
+
+              try {
+                  const response = await fetch(API_BASE + '/api/ai/chat', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                          message: message,
+                          model: selectedModel.value
+                      })
+                  });
+
+                  const data = await response.json();
+
+                  // 隐藏正在输入
+                  isTyping.value = false;
+
+                  if (data.success) {
+                      messages.value.push({
+                          sender: 'ai',
+                          content: data.choices[0].message.content,
+                          timestamp: new Date()
+                      });
+                  } else {
+                      messages.value.push({
+                          sender: 'ai',
+                          content: `抱歉，AI服务暂时不可用。错误：${data.errorMessage || '未知错误'}`,
+                          timestamp: new Date()
+                      });
+                  }
+              } catch (error) {
+                  console.error('Error:', error);
+                  isTyping.value = false;
+                  messages.value.push({
+                      sender: 'ai',
+                      content: '抱歉，与服务器通信时发生错误。请检查网络连接或稍后重试。',
+                      timestamp: new Date()
+                  });
+              } finally {
+                  isLoading.value = false;
+                  scrollToBottom();
+              }
+          };
+
+          const handleEnter = (event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  sendMessage();
+              }
+          };
+
+          const scrollToBottom = () => {
+              nextTick(() => {
+                  if (chatContainer.value) {
+                      chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+                  }
+              });
+          };
+
+          const formatMessage = (content) => {
+              return content
+                  .replace(/&/g, '&amp;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#039;')
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                  .replace(/`([^`]+)`/g, '<code>$1</code>')
+                  .replace(/\n/g, '<br>');
+          };
+
+          const formatTime = (date) => {
+              return new Date(date).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+              });
+          };
+
+          // 生命周期
+          onMounted(() => {
+              scrollToBottom();
+          });
+
+          return {
+              messages,
+              inputMessage,
+              isLoading,
+              isTyping,
+              selectedModel,
+              chatContainer,
+              sendMessage,
+              handleEnter,
+              formatMessage,
+              formatTime
+          };
+      }
+  }).mount('#app');
+</script>
+</body>
+</html>
