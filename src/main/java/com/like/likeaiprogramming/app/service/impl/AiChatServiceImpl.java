@@ -42,9 +42,15 @@ public class AiChatServiceImpl implements AiChatService {
             default:
                 logger.info("========================no correspond ai model========================");
         }
-        response.put("ok", true);
-        response.put("success", true);
-        response.put("content", responseStr);
+        if (Strings.isEmpty(responseStr)) {
+            response.put("ok", false);
+            response.put("success", false);
+            response.put("content", "AI模型未返回任何内容");
+        } else {
+            response.put("ok", true);
+            response.put("success", true);
+            response.put("content", responseStr);
+        }
 
         return response;
     }
