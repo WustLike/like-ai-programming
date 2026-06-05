@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import reactor.core.publisher.Flux;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
@@ -53,6 +54,28 @@ public class AiChatServiceImpl implements AiChatService {
         }
 
         return response;
+    }
+
+    @Override
+    public Flux<String> aiStreamChat(String message, String model) {
+        logger.info("========================流式对话开始，模型: {}========================", model);
+
+        ChatClient targetClient;
+        switch (model) {
+            case "deepseek":
+                targetClient = deepseekChatClient;
+                break;
+            case "claude":
+                targetClient = claudeChatClient;
+                break;
+            default:
+                // 如果是不支持的模型，返回一个错误信息流
+                return Flux.just("错误：不支持的AI模型 - " + model);
+        }
+
+        return targetClient.prompt()
+                .user(message)
+                .stream().content();
     }
 
 }

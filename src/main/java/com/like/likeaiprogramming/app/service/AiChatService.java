@@ -1,6 +1,7 @@
 package com.like.likeaiprogramming.app.service;
 
 import com.like.likeaiprogramming.api.dto.ChatRequest;
+import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
@@ -13,5 +14,14 @@ public interface AiChatService {
      * @return
      */
     Map<String, Object> aiChat(ChatRequest chatRequest);
+
+    /**
+     * AI流式对话
+     *
+     * @param message
+     * @param model
+     * @return
+     */
+    Flux<String> aiStreamChat(String message, String model);
 
 }
