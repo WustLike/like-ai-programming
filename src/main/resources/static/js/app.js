@@ -337,31 +337,37 @@ function addMessageToUI(role, content) {
  */
 function createMessageElement(role, content, id) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = `flex items-start ${role === 'user' ? 'justify-end' : ''}`;
+    messageDiv.className = `flex items-start message-animation ${role === 'user' ? 'justify-end' : ''}`;
     messageDiv.id = id;
 
     // 头像
     const avatarDiv = document.createElement('div');
-    avatarDiv.className = `rounded-full p-2 ${role === 'user' ? 'bg-green-100 order-2 ml-3' : 'bg-blue-100 mr-3'}`;
+    avatarDiv.className = role === 'user'
+        ? 'order-2 ml-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-400/10 shadow-neon'
+        : 'mr-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-cyan-300/40 bg-cyan-400/10 shadow-neon';
 
     const avatarIcon = document.createElement('i');
-    avatarIcon.className = `fas ${role === 'user' ? 'fa-user text-green-600' : 'fa-robot text-blue-600'}`;
+    avatarIcon.className = `fas ${role === 'user' ? 'fa-user text-emerald-200' : 'fa-robot text-cyan-200'}`;
     avatarDiv.appendChild(avatarIcon);
 
     // 消息内容
     const contentDiv = document.createElement('div');
-    contentDiv.className = `flex-1 ${role === 'user' ? 'order-1' : ''}`;
+    contentDiv.className = role === 'user'
+        ? 'order-1 max-w-[82%] text-right'
+        : 'max-w-[82%]';
 
     const roleLabel = document.createElement('div');
-    roleLabel.className = `font-bold ${role === 'user' ? 'text-green-700' : 'text-blue-700'}`;
+    roleLabel.className = `font-semibold ${role === 'user' ? 'text-emerald-100' : 'text-cyan-100'}`;
     roleLabel.textContent = role === 'user' ? '你' : 'AI';
 
     const textDiv = document.createElement('div');
-    textDiv.className = 'text-gray-800 mt-1';
+    textDiv.className = role === 'user'
+        ? 'message-content mt-2 whitespace-pre-wrap rounded-lg border border-emerald-300/25 bg-emerald-400/10 px-4 py-3 text-left text-slate-100'
+        : 'message-content mt-2 whitespace-pre-wrap rounded-lg border border-slate-700/70 bg-slate-900/75 px-4 py-3 text-slate-200';
     textDiv.textContent = content;
 
     const timeDiv = document.createElement('div');
-    timeDiv.className = 'text-xs text-gray-400 mt-1';
+    timeDiv.className = 'mt-2 text-xs text-slate-500';
     timeDiv.textContent = new Date().toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit'
@@ -391,7 +397,7 @@ function appendToChatContainer(element) {
 function appendToMessage(messageId, content) {
     const messageElement = document.getElementById(messageId);
     if (messageElement) {
-        const textDiv = messageElement.querySelector('div.text-gray-800');
+        const textDiv = messageElement.querySelector('.message-content');
         if (textDiv) {
             textDiv.textContent += content;
             DOM_ELEMENTS.chatContainer.scrollTop = DOM_ELEMENTS.chatContainer.scrollHeight;
@@ -417,14 +423,14 @@ function updateUIState(state) {
         case 'sending':
             DOM_ELEMENTS.userInput.disabled = true;
             DOM_ELEMENTS.sendButton.disabled = true;
-            DOM_ELEMENTS.sendButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 思考中...';
+            DOM_ELEMENTS.sendButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 思考中';
             DOM_ELEMENTS.statusEl.textContent = '思考中...';
             break;
 
         case 'streaming':
             DOM_ELEMENTS.userInput.disabled = true;
             DOM_ELEMENTS.sendButton.disabled = true;
-            DOM_ELEMENTS.sendButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 生成中...';
+            DOM_ELEMENTS.sendButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 生成中';
             DOM_ELEMENTS.statusEl.textContent = '流式生成中...';
             if (DOM_ELEMENTS.stopButton) {
                 DOM_ELEMENTS.stopButton.classList.remove('hidden');
@@ -521,13 +527,13 @@ function showToast(message, type = 'info') {
     const toast = document.createElement('div');
 
     const typeClasses = {
-        info: 'bg-blue-100 border-blue-400 text-blue-700',
-        success: 'bg-green-100 border-green-400 text-green-700',
-        warning: 'bg-yellow-100 border-yellow-400 text-yellow-700',
-        error: 'bg-red-100 border-red-400 text-red-700'
+        info: 'bg-cyan-500/15 border-cyan-300/35 text-cyan-100',
+        success: 'bg-emerald-500/15 border-emerald-300/35 text-emerald-100',
+        warning: 'bg-amber-500/15 border-amber-300/35 text-amber-100',
+        error: 'bg-rose-500/15 border-rose-300/35 text-rose-100'
     };
 
-    toast.className = `px-4 py-3 rounded-lg border ${typeClasses[type] || typeClasses.info}
+    toast.className = `toast-surface px-4 py-3 rounded-lg border ${typeClasses[type] || typeClasses.info}
                        transition-all duration-300 transform translate-x-full opacity-0`;
 
     const iconClass = {
